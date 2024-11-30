@@ -6,6 +6,8 @@ import { STACKS_MAINNET } from '@stacks/network';
 
 import './App.css';
 
+import moonLogo from './assets/moonlabsLogo.png'
+
 interface FinishData {
   txId: string;
   txRaw: string;
@@ -29,7 +31,7 @@ function App() {
     showConnect({
       appDetails: {
         name: 'Moonlabs',
-        icon: '',
+        icon: moonLogo,
       },
       redirectTo: '/',
       onFinish: () => {
@@ -65,7 +67,7 @@ function App() {
       codeBody: contractCode.trim(),
       appDetails: {
         name: 'Moonlabs',
-        icon: '',
+        icon: moonLogo,
       },
       network: STACKS_MAINNET,
       onFinish: (data: FinishData) => {
