@@ -2,7 +2,7 @@ import { openContractDeploy } from '@stacks/connect';
 import { PostConditionMode } from '@stacks/transactions';
 import { useState } from 'react';
 import { AppConfig, UserSession, showConnect } from '@stacks/connect';
-import { STACKS_MAINNET } from '@stacks/network';
+import { STACKS_MAINNET, STACKS_TESTNET } from '@stacks/network';
 
 import './App.css';
 
@@ -19,8 +19,10 @@ const userSession = new UserSession({ appConfig });
 function App() {
   const [authenticated, setAuthenticated] = useState(false);
   const [userPrincipal, setUserPrincipal] = useState('');
-  const [contractCode, setContractCode] = useState(''); 
-  const [contractName, setContractName] = useState(''); 
+  const [testnetUserPrincipal, setTestnetUserPrincipal] = useState('');
+  const [contractCode, setContractCode] = useState('');
+  const [contractName, setContractName] = useState('');
+  const [isMainnet, setIsMainnet] = useState(true);
 
   // ------------------------------------------------------------------------------------------------------------------- //
   // ----------------------- //
@@ -38,6 +40,7 @@ function App() {
         setAuthenticated(true);
         const userData = userSession.loadUserData();
         setUserPrincipal(userData?.profile?.stxAddress.mainnet);
+        setTestnetUserPrincipal(userData?.profile?.stxAddress.testnet);
       },
       userSession: userSession,
     });
@@ -62,6 +65,8 @@ function App() {
   };
 
   const deployContract = async () => {
+    const network = isMainnet ? STACKS_MAINNET : STACKS_TESTNET;
+
     const options = {
       contractName: contractName.trim(),
       codeBody: contractCode.trim(),
@@ -69,12 +74,13 @@ function App() {
         name: 'Moonlabs',
         icon: moonLogo,
       },
-      network: STACKS_MAINNET,
+      network: network,
       onFinish: (data: FinishData) => {
         console.log('Transaction ID:', data.txId);
         console.log('Raw transaction:', data.txRaw);
-        const explorerTransactionUrl = `https://explorer.stacks.co/txid/${data.txId}?chain=mainnet`;
-        const receiptTransactionUrl = `https://api.mainnet.hiro.so/extended/v1/tx/${data.txId}`;
+        const chain = isMainnet ? 'mainnet' : 'testnet';
+        const explorerTransactionUrl = `https://explorer.stacks.co/txid/${data.txId}?chain=${chain}`;
+        const receiptTransactionUrl = `https://api.${chain}.hiro.so/extended/v1/tx/${data.txId}`;
         console.log('View transaction in explorer:', explorerTransactionUrl);
         console.log('View transaction receipt:', receiptTransactionUrl);
       },
@@ -86,13 +92,16 @@ function App() {
     });
   };
 
+
   return (
     <div className="container">
       <div className="connect-wrapper">
         {authenticated ? (
           <div className="connect-h-wrapper">
             <div className="connect-button" onClick={authenticate}>
-              {userPrincipal.slice(0, 6)}...{userPrincipal.slice(-4)}
+              {isMainnet
+                ? `${userPrincipal.slice(0, 6)}...${userPrincipal.slice(-4)}`
+                : `${testnetUserPrincipal.slice(0, 6)}...${testnetUserPrincipal.slice(-4)}`}
             </div>
           </div>
         ) : (
@@ -104,6 +113,18 @@ function App() {
 
       {authenticated && (
         <div className="deploy-wrapper">
+          <div className="toggle-wrapper">
+            <label className="toggle-label">
+              <input
+                type="checkbox"
+                checked={isMainnet}
+                onChange={(e) => setIsMainnet(e.target.checked)}
+              />
+              <span className="toggle-slider" />
+              <div style={{marginTop: '10px'}}>{isMainnet ? 'Mainnet' : 'Testnet'}</div>
+            </label>
+            
+          </div>
           <div className="input-group">
             <label htmlFor="contract-name">Contract Name:</label>
             <input
@@ -114,11 +135,10 @@ function App() {
               onChange={(e) => {
                 const value = e.target.value;
                 if (/^[a-zA-Z0-9-]*$/.test(value)) {
-                  setContractName(value); // Only update state if input is valid
+                  setContractName(value);
                 }
               }}
             />
-
           </div>
           <div className="input-group">
             <label htmlFor="contract-code">Contract Code:</label>
